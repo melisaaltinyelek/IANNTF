@@ -21,7 +21,8 @@ def plot_digit(data, target):
 
 
 ##################################################################
-# normalizing data
+# normalizing data and type=float32:
+data = data.astype(np.float32)
 normalized_data = (data - np.min(data)) / (np.max(data) - np.min(data))
 ###############################################################
 # Reshape all image vectors to (64,)
