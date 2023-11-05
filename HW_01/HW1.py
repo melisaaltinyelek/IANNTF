@@ -229,8 +229,14 @@ def train_mlp(mlp, input_target_tuples, num_epochs, minibatch_size, learning_rat
 ####################### Application #################################
 
 # MLP architecture
+# NOTE!!!
+# if you want to add more layers to layer_sizes you should also add its activation function as well,
+# also the first and last layer should remain at 64 and 10 in size, since we have 8X8 input images and one hot encoded outputs with 10 elements.
+# also the last activation function shiould be SoftmaxActivation() since we have a classification problem.
+# Example: layer_sizes = [64, 64, 64, 32, 10] , activation_functions = [SigmoidActivation(), SigmoidActivation(), SigmoidActivation(), SoftmaxActivation()]
+
 layer_sizes = [64, 32, 10]
-activation_functions = [SigmoidActivation(), SoftmaxActivation()]
+activation_functions = [SigmoidActivation(), SoftmaxActivation()] .
 
 # Create MLP
 mlp = []
