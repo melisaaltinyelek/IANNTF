@@ -89,6 +89,6 @@ class MLP_Layer():
         self.bias = bias
 
     def call(self, x):
-        pre_activations = self.weights @ x + self.bias
+        pre_activations = self.weights @ x + np.transpose(self.bias)
         activations = sigmoid(pre_activations) 
         return activations 
