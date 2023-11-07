@@ -1,6 +1,7 @@
 from sklearn.datasets import load_digits
 import matplotlib.pyplot as plt
 import numpy as np
+import random
 
 # n_class: the digits from 0 to 9
 # return_X_y = False: (data, target) as a tuple
@@ -37,8 +38,8 @@ reshaped_image_array = np.array(reshaped_images)
 print(reshaped_image_array)
 
 # Converting the data type of the array to float32.
-data_as_float = data.astype(np.float32)
-print(data_as_float.dtype)
+data_as_float = reshaped_image_array.astype(np.float32)
+print(data_as_float)
 
 # Scale the data to the range of 0 to 1
 data_as_float /= 255.0
@@ -56,5 +57,23 @@ for t in target:
 one_hot_encoded_labels_array = np.array(one_hot_encoded_labels)  
 print(one_hot_encoded_labels)
 
-def generator(input, target):
+def generator(input_data, target_data, batch_size):
     """Shuffles the input - target pairs"""
+
+    input_target_pairs = list(zip(input_data, target_data))
+    random.shuffle(input_target_pairs)
+
+    total_samples = len(input_target_pairs)
+    mini_batches = total_samples // batch_size
+
+    #for m in range(mini_batches):
+
+class sigmoid():
+    def __call__(self, x):
+        return 1 / 1 + np.exp(-x)
+    
+class Softmax():
+    def __Call__(self, x):
+        return np.exp / np.sum(np.exp(x), axis = 1, keepdims = True)
+    
+    
