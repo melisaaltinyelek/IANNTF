@@ -75,5 +75,20 @@ class sigmoid():
 class Softmax():
     def __Call__(self, x):
         return np.exp / np.sum(np.exp(x), axis = 1, keepdims = True)
-    
-    
+
+class MLP_Layer():
+    def __init__(self, num_inputs, num_neurons):
+        self.num_inputs = num_inputs
+        self.num_neurons = num_neurons
+
+        self.weights = np.zeros(self.num_neurons, self,num_inputs) 
+        self.bias = np.zeros((self.num_neurons))
+
+    def set_weights(self, weights, bias):
+        self.weights = weights
+        self.bias = bias
+
+    def call(self, x):
+        pre_activations = self.weights @ x + self.bias
+        activations = sigmoid(pre_activations) 
+        return activations 
