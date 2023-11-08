@@ -236,7 +236,7 @@ def train_mlp(mlp, input_target_tuples, num_epochs, minibatch_size, learning_rat
 # Example: layer_sizes = [64, 64, 64, 32, 10] , activation_functions = [SigmoidActivation(), SigmoidActivation(), SigmoidActivation(), SoftmaxActivation()]
 
 layer_sizes = [64, 32, 10]
-activation_functions = [SigmoidActivation(), SoftmaxActivation()] .
+activation_functions = [SigmoidActivation(), SoftmaxActivation()]
 
 # Create MLP
 mlp = []
