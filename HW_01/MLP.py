@@ -3,14 +3,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import random
 
-# n_class: the digits from 0 to 9
-# return_X_y = False: (data, target) as a tuple
-# as_frame = False: returns (data, target) as a numpy array
-digits_dataset = load_digits(n_class = 10, return_X_y = False, as_frame = False)
+# Loading the dataset
+digits = load_digits()
 
 # Accessing the data (input) and target (output)
-data = digits_dataset.data
-target = digits_dataset.target
+data, target = digits.data, digits.target
 
 # Iterating over the dataset and creating a tuple of input and output
 input_output_tuple = [(data[i], target[i]) for i in range (len(data))]
@@ -38,35 +35,44 @@ reshaped_image_array = np.array(reshaped_images)
 print(reshaped_image_array)
 
 # Converting the data type of the array to float32.
-data_as_float = reshaped_image_array.astype(np.float32)
-print(data_as_float)
+reshaped_data = reshaped_image_array.astype(np.float32)
+print(reshaped_data)
 
 # Scale the data to the range of 0 to 1
-data_as_float /= 255.0
+reshaped_data /= 255.0
 
-# Creating an empty list to store the one hot encoded labels
-one_hot_encoded_labels = []
+# One hot encoding the target
+num_classes = 10
+one_hot_targets = np.eye(num_classes)[target]
 
-# Iterating over the target and creating a one hot encoded label for each target
-for t in target:
-    one_hot_encoded = np.zeros(10, dtype = np.float32)
-    # Setting the index of the label to 1
-    one_hot_encoded[t] = 1
-    one_hot_encoded_labels.append(one_hot_encoded)
+# Create (input, target) tuples with reshaped data
+reshaped_input_target_tuple = list(zip(reshaped_data, one_hot_targets))
+######################################################
 
-one_hot_encoded_labels_array = np.array(one_hot_encoded_labels)  
-print(one_hot_encoded_labels)
+def generator(input_target_data, minibatch_size):
+    """Shuffles the input - target pairs and yields minibatches"""
 
-def generator(input_data, target_data, batch_size):
-    """Shuffles the input - target pairs"""
-
-    input_target_pairs = list(zip(input_data, target_data))
+    # Packing the input and target data into a list of tuples
+    input_target_pairs = list(zip(input_target_data))
+    # Shuffling the input - target pairs
     random.shuffle(input_target_pairs)
+    # Calculating the number of minibatches
+    num_minibatches = len(input_target_pairs) // minibatch_size
 
-    total_samples = len(input_target_pairs)
-    mini_batches = total_samples // batch_size
+    # Iterating over the minibatches and yielding the input and target data.
+    for j in range(num_minibatches):
+        # Calculating the start and end indices of a minibatch
+        start_index = j * minibatch_size
+        end_index = start_index + minibatch_size
+        minibatch = input_target_data[start_index:end_index]
 
-    #for m in range(mini_batches):
+        # Unpacking the minibatch into input and target data
+        minibatch_input, minibatch_target = zip(*minibatch)
+        minibatch_input = np.array(minibatch_input)
+        minibatch_target = np.array(minibatch_target)
+
+        yield minibatch_input, minibatch_target
+
 
 class sigmoid():
     def __call__(self, x):
