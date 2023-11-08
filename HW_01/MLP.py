@@ -73,28 +73,75 @@ def generator(input_target_data, minibatch_size):
 
         yield minibatch_input, minibatch_target
 
+#####################################################################
 
-class sigmoid():
+class Sigmoid():
     def __call__(self, x):
         return 1 / 1 + np.exp(-x)
     
-class Softmax():
-    def __Call__(self, x):
+    def backward(self, output):
+        return output * (1 - output)
+    
+#####################################################################
+    
+class Softmax_Activation():
+    def __call__(self, x):
         return np.exp / np.sum(np.exp(x), axis = 1, keepdims = True)
+    
+    def backward(self, output):
+        return output * (1 - output)
+    
+#####################################################################
+    
+class CCE_Loss():
+    def __call__(self, predicted_probs, true_labels):
+    
+        # Avoid the division by zero
+        predicted_probs = np.clip(predicted_probs, 1e-15, 1 - 1e-5)
+
+        # Calculate the loss (the formula: - Σ (true_labels * log(predicted_probs))
+        loss = - np.sum(true_labels * np.log(predicted_probs), axis = 1)
+        return loss
+
+    def backward(self, predicted_probs, true_labels):
+        # Calculate the error signal by subtracting the predicted values from the true labels
+        error_signal = predicted_probs - true_labels
+
+        return error_signal
+
+
+#####################################################################
 
 class MLP_Layer():
-    def __init__(self, num_inputs, num_neurons):
+    def __init__(self, activation_function, num_inputs, num_neurons):
+        self.activation_function = activation_function
         self.num_inputs = num_inputs
         self.num_neurons = num_neurons
 
-        self.weights = np.zeros(self.num_neurons, self,num_inputs) 
-        self.bias = np.zeros((self.num_neurons))
+        # Iniziliazing the wights and the bias
+        self.weights = np.random.normal(loc = 0.0, scale = 1.0, size = (self.num_neurons, self.num_inputs))
+        self.bias = np.zeros((1, self.num_neurons))
 
-    def set_weights(self, weights, bias):
-        self.weights = weights
-        self.bias = bias
+        # Store input, pre-activation, and activation for backpropagation
+        self.input = None
+        self.pre_activation = None
+        self.activation = None
 
-    def call(self, x):
-        pre_activations = self.weights @ x + np.transpose(self.bias)
-        activations = sigmoid(pre_activations) 
-        return activations 
+    def forward(self, input_data):
+        # Storing the input data
+        self.input = input_data
+        
+        # Computing pre-activation values
+        self.pre_activation = self.weights @ input_data + np.transpose(self.bias)
+
+        # Applying activation function
+        if isinstance(self.activation, Sigmoid):
+            self.activation = self.activation_function(self.pre_activation)
+        elif isinstance(self.activation, Softmax_Activation):
+            self.activation = self.activation_function(self.pre_activation)
+        else:
+            raise ValueError("Invalid activation function. Please choose Sigmoid or Softmax.")
+         
+        return self.activation
+    
+    
