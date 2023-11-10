@@ -135,13 +135,93 @@ class MLP_Layer():
         self.pre_activation = self.weights @ input_data + np.transpose(self.bias)
 
         # Applying activation function
-        if isinstance(self.activation, Sigmoid):
+        if isinstance(self.activation_function, Sigmoid):
             self.activation = self.activation_function(self.pre_activation)
-        elif isinstance(self.activation, Softmax_Activation):
+        elif isinstance(self.activation_function, Softmax_Activation):
             self.activation = self.activation_function(self.pre_activation)
         else:
             raise ValueError("Invalid activation function. Please choose Sigmoid or Softmax.")
          
         return self.activation
     
+    def backward(self, error_signal, learning_rate):
+
+        if isinstance(self.activation_function, Sigmoid):
+            activation_gradient = self.activation_function.backward(self.activation)
+        elif isinstance(self.activation_function, Softmax_Activation):
+            activation_gradient = self.activation_function.backward(self.activation)
+        else:
+            raise ValueError("Invalid activation function. Please choose Sigmoid or Softmax.")
+        
+        delta = error_signal * activation_gradient
+
+        # Adjusting weights and biases
+        self.weights -= learning_rate * delta @ np.transpose(self.input) #np.dot(self.input.T, delta)
+        self.bias -= learning_rate * np.sum(delta, axis = 0, keepdims = True)
+
+        # Calculating the error signal for the next layer
+        next_layer_error_signal = delta @ np.transpose(self.weights)
+
+        return next_layer_error_signal
     
+
+def train_MLP(mlp, input_target_data, num_epochs, minibatch_size, learning_rate):
+    cce_loss = CCE_Loss()
+    loss_history = []
+
+    # Exctracting the input and target data from the input_target_data
+    input_data, true_labels = zip(*input_target_data)
+    input_data = np.array(input_data)
+    true_labels = np.array(true_labels)
+
+    for epoch in range(1, num_epochs + 1):
+        total_loss = 0,0
+
+        # Shuffle the training data for each epoch
+        indices = np.arange(len(input_data))
+        np.random.shuffle(indices)
+
+        for i in range(0, len(input_data), minibatch_size):
+            minibatch_indices = indices[i:i + minibatch_size]
+            minibatch_data = input_data[minibatch_indices]
+            minibatch_labels = true_labels[minibatch_indices]
+
+            # Forward pass
+            current_input = minibatch_data
+            for layer in mlp:
+                current_input = layer.forward(current_input)
+
+            # Calculate loss
+            loss = cce_loss(current_input, minibatch_labels)
+            total_loss += loss
+
+            # Backward pass
+            error_signal = cce_loss.backward(current_input, minibatch_labels)
+            for layer in reversed(mlp):
+                error_signal = layer.backward(error_signal, learning_rate)
+
+        # Calculate average loss for the epoch
+        average_loss = total_loss / (len(input_data) / minibatch_size)
+        loss_history.append(average_loss)
+
+        print(f"Epoch {epoch}/{num_epochs}, Average Loss: {average_loss}")
+    
+     # Plot the loss history
+    plt.plot(range(1, num_epochs + 1), loss_history, marker='o')
+    plt.xlabel('Epoch')
+    plt.ylabel('Average Loss')
+    plt.title('Training Loss Over Epochs')
+    plt.show()
+
+
+layer_sizes = [64, 32, 10]
+activation_functions = [Sigmoid(), Softmax_Activation()]
+
+# Create MLP
+mlp = []
+for i in range(len(layer_sizes) -1):
+    layer = MLP_Layer(activation_functions[i], layer_sizes[i + 1], layer_sizes[i])
+    mlp.append(layer)
+
+# training
+train_MLP(mlp, reshaped_input_target_tuple, num_epochs=1000, minibatch_size = 32, learning_rate = 0.01)    
