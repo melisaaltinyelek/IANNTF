@@ -1,0 +1,144 @@
+import tensorflow as tf
+import tensorflow_datasets as tfds
+from keras.layers import Dense
+import matplotlib.pyplot as plt
+
+(train_ds, test_ds), ds_info = tfds.load('mnist', split=['train', 'test'], as_supervised=True, with_info=True, download=True)
+
+#print(ds_info)
+
+
+"""
+• How many training/test images are there? 
+    Answer: 60000 for train and 10000 for test
+• What’s the image shape?
+    Answer: images shape is (28,28,1)
+• What range are pixel values in?
+    Answer: for uint8 images the range is between 0 to 255
+
+"""
+
+# visualizing some images and their labels
+#tfds . show_examples (train_ds , ds_info)
+
+########### data preprocessing #####################
+
+def data_prep (mnist):
+
+    # flatten images to feed to fully connected nn
+    mnist = mnist.map(lambda img, target: (tf.reshape(img, (-1,)), target))
+    #The tf. cast() function is used to cast a specified Tensor to a new data type
+    mnist = mnist.map(lambda img, target: (tf.cast(img, tf.float32), target))
+    # normalizing data
+    mnist = mnist.map(lambda img, target: ((img / 128.) - 1., target))
+    # one-hot targets, depth=10 we have 10 digits i.e. 10 classes
+    mnist = mnist.map(lambda img, target: (img, tf.one_hot(target, depth=10)))
+
+    # cache this progress in memory, as there is no need to redo it; it is deterministic after all
+    mnist = mnist.cache()
+    # shuffle, batch, prefetch
+    mnist = mnist.shuffle(1000)
+    mnist = mnist.batch(128)
+    mnist = mnist.prefetch(20)
+
+    return mnist
+
+
+train_dataset = train_ds.apply(data_prep)
+test_dataset = test_ds.apply(data_prep)
+
+######### create an nn model of Keras Model #############
+
+class MyModel(tf.keras.Model):
+
+    def __init__(self):
+        super(MyModel, self).__init__()
+
+        self.dense1 = tf.keras.layers.Dense(128, activation=tf.nn.relu)
+        self.dense2 = tf.keras.layers.Dense(64, activation=tf.nn.relu)
+        self.dense3 = tf.keras.layers.Dense(64, activation=tf.nn.relu)
+        self.dense4 = tf.keras.layers.Dense(64, activation=tf.nn.relu)
+        self.dense5 = tf.keras.layers.Dense(32, activation=tf.nn.relu)
+        self.out = tf.keras.layers.Dense(10, activation=tf.nn.softmax)
+
+    @tf.function
+    def call(self, inputs):
+        #inputs = tf.expand_dims(inputs, axis=-1)
+        x = self.dense1(inputs)
+        x = self.dense2(x)
+        x = self.out(x)
+        #x = tf.reduce_sum(x, axis=0)
+        return x
+
+
+############### Training function ####################################
+
+def train_model (model, train_dataset,test_dataset, loss_function, optimizer,n_epochs):
+
+    train_loss_final=[]
+    test_loss_final =[]
+
+    for epoch in range(n_epochs):
+
+        train_loss_aggregator = []
+        test_loss_aggregator = []
+        if epoch >=1:
+            print(f'Epoch: {str(epoch)} >>> test data loss {test_loss_final[-1]}')
+        for input, target in train_dataset:
+
+            with tf.GradientTape() as tape:
+                prediction = model(input)
+                loss = loss_function(target, prediction)
+                train_loss_aggregator.append(loss)
+            gradients = tape.gradient(loss, model.trainable_variables)
+            optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+
+        for input, target in test_dataset:
+
+            prediction = model(input)
+            sample_test_loss = loss_function(target, prediction)
+            test_loss_aggregator.append(sample_test_loss.numpy())
+
+        test_loss = tf.reduce_mean(test_loss_aggregator)
+        train_loss = tf.reduce_mean(train_loss_aggregator)
+        train_loss_final.append(train_loss)
+        test_loss_final.append(test_loss)
+
+    return train_loss_final,test_loss_final
+
+########## Application #############################################
+
+tf.keras.backend.clear_session()
+train_dataset = train_dataset.take(1000)
+test_dataset = test_dataset.take(100)
+model = MyModel()
+cross_entropy_loss = tf.keras.losses.CategoricalCrossentropy()
+optimizer = tf.keras.optimizers.SGD(learning_rate=0.01,momentum=0.9)
+train_loss_final,test_loss_final = train_model(model,train_dataset,test_dataset,cross_entropy_loss,optimizer,20)
+
+# Visualize loss for training and test data
+
+plt.figure()
+line1, = plt.plot(train_loss_final)
+line2, = plt.plot(test_loss_final)
+plt.xlabel("num of epochs")
+plt.ylabel("Loss")
+plt.legend((line1,line2),("train loss","test loss"))
+plt.show()
+
+####### Adjusting the hyperparameters of our model #######################
+
+""" 
+
+1- within 20 epochs, 0.001 learning rate, batch size of 32, SGD, two layers with 256 neurons:
+    the final test loss was 0.26 and final train loss was 0.25
+2- within 20 epochs, 0.001 lr, batch size of 64, SGD, four layers with 128, 64, 64, 32 neurons:
+    the final test loss was 0.276 and final train loss was 0.277
+3- within 20 epochs, 0.01 lr, batch size of 64, SGD (momentum=0.7), four layers with 128, 64, 64, 32 neurons:
+    the final test loss was 0.085 and final train loss was 0.026
+4- within 20 epochs, 0.01 lr, batch size of 128, SGD (momentum=0.9), five layers with 128, 64, 64, 64, 32 neurons:
+    the final test loss was 0.087 and final train loss was 0.021
+5- within 20 epochs, 0.01 lr, batch size of 64, SGD (momentum=0.9), four layers with 64, 64, 64, 32 neurons:
+    the final test loss was 0.097 and final train loss was 0.033
+          
+"""
