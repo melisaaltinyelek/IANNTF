@@ -12,9 +12,11 @@ import matplotlib.pyplot as plt
 #print(ds_info)
 
 """
+
 How many training/test images are there? --> 60000 and 10000, respectively.
 What’s the image shape? --> Image(shape=(28, 28, 1)
 What range are pixel values in? --> [0, 255]
+
 """
 
 # Image data type
@@ -81,17 +83,21 @@ class MyModel(tf.keras.Model):
 
 def train_model(model, train_dataset, test_dataset, loss_function, optimizer, num_epochs):
     
+    # Store mean losses for each epoch in the training and testing datasets.
     train_loss_final = []
     test_loss_final = []
 
 
     for epoch in range(num_epochs):
-
+        # Store losses for each batch in the training and tesing datasets.
         train_loss_aggregator = []
         test_loss_aggregator = []
 
-        print(f"Epoch: {str(epoch)} Test data loss: {test_loss_final}")
+        if epoch >=1:
+            print(f'Epoch: {str(epoch)} >>> Test data loss {test_loss_final[-1]}')
+            print(f'Epoch: {str(epoch)} >>> Train data loss {train_loss_final[-1]}')
         
+        # Iterate over the batches in the training dataset.
         for input, target in train_dataset:
             with tf.GradientTape() as tape:
                 prediction = model(input)
@@ -100,7 +106,7 @@ def train_model(model, train_dataset, test_dataset, loss_function, optimizer, nu
             gradients = tape.gradient(loss, model.trainable_variables)
             optimizer.apply_gradients(zip(gradients, model.trainable_variables))
             
-
+        # Iterate over the batches in the testing dataset.
         for input, target in test_dataset:
             prediction = model(input)
             sample_test_loss = loss_function(target, prediction)
@@ -126,7 +132,7 @@ model = MyModel()
 # Initialize the loss
 cross_entrophy_loss = tf.keras.losses.CategoricalCrossentropy()
 # Initialize the optimuzer
-optimizer = tf.keras.optimizers.SGD(learning_rate = 0.01)
+optimizer = tf.keras.optimizers.legacy.SGD(learning_rate = 0.001, momentum = 0.9)
 train_loss_final, test_loss_final = train_model(model, train_dataset, test_dataset, cross_entrophy_loss, optimizer, 20)
 
 # Visualize loss for training and test data
@@ -134,7 +140,27 @@ train_loss_final, test_loss_final = train_model(model, train_dataset, test_datas
 plt.figure()
 line1, = plt.plot(train_loss_final)
 line2, = plt.plot(test_loss_final)
-plt.xlabel("num of epochs")
+plt.xlabel("Number of epochs")
 plt.ylabel("Loss")
-plt.legend((line1,line2),("train loss","test loss"))
+plt.legend((line1, line2),("Train loss","Test loss"))
 plt.show()
+
+###################### Adjusting hyperparameters ###################### 
+
+"""
+
+1. Learning rate = 0.01, batch size = 32, momentum = 0.9, two layers with 256 neurons:
+    Test data loss is 0.09 while train data loss is 0.02.
+2. Learning rate = 0.5, batch size = 32, momentum = 0.9, four layers with 128, 64, 64, 32 neurons:
+    Test data loss is 14.55, while train data loss is 14.51.
+3. Learning rate = 0.5, batch size = 100, momentum 0.5, four layers with 64 neurons each:
+    Test data loss is 14.53, while train data loss is 14.54.
+4. Learning rate = 0.001, batch size = 32, momentum = 0.9, two layers with 256 neurons:
+    Test data loss is 0.10, while train data loss is 0.05.
+
+- When the model performs better on the training dataset than on the test data, it is likely that the model is 
+overfitting to the training data, which might be caused by small learning rate and batch size. On the other hand, when both
+train and test data losses are quite high (e.g. 14.51), it means that the hyperparameters of the model need to be
+readjusted because they might be overshooting.
+
+"""
