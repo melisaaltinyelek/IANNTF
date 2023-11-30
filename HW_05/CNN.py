@@ -40,5 +40,4 @@ def prepare_cifar10_data(cifar10):
     return cifar10
 
 train_dataset = train_ds.apply(prepare_cifar10_data)
-test_dataset = test_ds.apply(prepare_cifar10_data
-                             )
+test_dataset = test_ds.apply(prepare_cifar10_data)
