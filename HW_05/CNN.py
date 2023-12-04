@@ -11,9 +11,10 @@ import matplotlib.pyplot as plt
 
 """ Information about the dataset: 
 
-1. Consists of 60000 32x32 colored images in 10 different classes.
-2. There are 50000 trainin images and 10000 test images.
-3. There are 3 color channels.
+1. Consists of 60000 32x32x3 colored images in 10 different classes.
+2. There are 50000 training images and 10000 test images.
+3. Pixel values range from 0 to 255.
+4. Labels are N x !.
 
 """
 
